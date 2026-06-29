@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import SheetFrame, { TitleBlock } from './components/SheetFrame'
 import Masthead from './components/Masthead'
-import Rail, { type Mode } from './components/Rail'
+import HeroBar from './components/HeroBar'
+import { type Mode } from './components/Rail'
 import SpeedReveal from './components/SpeedReveal'
 import Readout from './components/Readout'
 import Footer from './components/Footer'
@@ -21,8 +22,6 @@ const SAMPLES = [
   { name: 'Growth dashboard — conversion collapse', src: '/samples/revenue.png' },
 ]
 
-// Fetch a sample (served from /public) and turn it into a base64 data URL the
-// proxy will accept — keeps the demo instant without the user finding an image.
 async function toDataUrl(pathOrData: string): Promise<string> {
   if (pathOrData.startsWith('data:')) return pathOrData
   const res = await fetch(pathOrData)
@@ -100,30 +99,28 @@ export default function App() {
 
   return (
     <SheetFrame>
-      <Masthead model={cfg.model} hasKey={cfg.hasKey} telemetry={telemetry} busy={busy} />
+      <HeroBar
+        image={image}
+        busy={busy}
+        note={note}
+        mode={mode}
+        model={cfg.model}
+        hasKey={cfg.hasKey}
+        samples={SAMPLES}
+        onImage={handleImage}
+        onNote={setNote}
+        onRun={run}
+        onClear={() => {
+          setImage(null)
+          setHasRun(false)
+          reset()
+        }}
+        onMode={setMode}
+      />
 
-      <div className="section-rule">OPERATIONS · drop a screen → prescribe the fix</div>
+      <div className="section-rule">OPERATIONS · prescribe the fix</div>
 
-      <div className="body-grid">
-        <Rail
-          image={image}
-          busy={busy}
-          note={note}
-          mode={mode}
-          model={cfg.model}
-          hasKey={cfg.hasKey}
-          samples={SAMPLES}
-          onImage={handleImage}
-          onNote={setNote}
-          onRun={run}
-          onClear={() => {
-            setImage(null)
-            setHasRun(false)
-            reset()
-          }}
-          onMode={setMode}
-        />
-
+      <div className="body-grid body-grid--2col">
         <div className="center">
           <SpeedReveal
             ticks={ticks}
@@ -142,6 +139,9 @@ export default function App() {
         </div>
       </div>
 
+      <div className="section-rule">ENGINE · cognition flow + throughput</div>
+      <Masthead model={cfg.model} hasKey={cfg.hasKey} telemetry={telemetry} busy={busy} />
+
       <div className="section-rule">SYSTEM</div>
       <Footer ticks={ticks} telemetry={telemetry} />
 
@@ -149,13 +149,7 @@ export default function App() {
 
       <div className="colophon">
         GlassGrid · Cerebras × Gemma 4 · real telemetry measured from the live SSE stream ·{' '}
-        <a
-          href="https://www.cerebras.ai/blog/gemma-4-on-cerebras-the-fastest-inference-is-now-multimodal"
-          target="_blank"
-          rel="noreferrer"
-        >
-          the speed thesis
-        </a>
+        <a href="https://www.cerebras.ai/blog/gemma-4-on-cerebras-the-fastest-inference-is-now-multimodal" target="_blank" rel="noreferrer">the speed thesis</a>
       </div>
     </SheetFrame>
   )
