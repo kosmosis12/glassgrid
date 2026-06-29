@@ -53,6 +53,7 @@ export default function HeroBar({
 
   return (
     <div className="hero">
+      <div className="hero-title"><span className="sat">✦</span> Glass<em>Grid</em></div>
       <div className="hero-stage">
         <div className="hero-scope">
           {!image ? (
@@ -115,7 +116,7 @@ export default function HeroBar({
               <button className={mode === 'reveal' ? 'on' : ''} onClick={() => onMode('reveal')}>SPEED REVEAL</button>
             </div>
             <div className="hero-prov">
-              <span className="k">engine</span>
+              <span className="k">engine&nbsp;</span>
               <span className="v amber">{model}</span>
               <span className={`dot ${hasKey ? 'ok' : 'bad'}`} title={hasKey ? 'key loaded' : 'no key'} />
             </div>

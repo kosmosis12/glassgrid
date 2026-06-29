@@ -10,6 +10,8 @@ dotenv.config()
 const PORT = process.env.PORT || 8787
 const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY
 const CEREBRAS_MODEL = process.env.CEREBRAS_MODEL || 'gemma-4-31b'
+const OLLAMA_URL = (process.env.OLLAMA_URL || 'http://localhost:11434').replace(/\/$/, '')
+const OLLAMA_VISION_MODEL = process.env.OLLAMA_VISION_MODEL || 'gemma4:12b-it-qat'
 const CEREBRAS_BASE_URL = (process.env.CEREBRAS_BASE_URL || 'https://api.cerebras.ai/v1').replace(/\/$/, '')
 
 const app = express()
@@ -75,6 +77,37 @@ app.get('/api/config', (_req, res) => {
   })
 })
 
+
+async function streamOllama(image, note, res) {
+  const b64 = image.replace(/^data:image\/[a-z]+;base64,/, '')
+  const sys = 'You are a visual operations agent. Detect the anomaly in this dashboard, score severity, and emit a JSON action card: {"detect":"","score":"","recommend":"","act":""}.'
+  const r = await fetch(`${OLLAMA_URL}/api/chat`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: OLLAMA_VISION_MODEL, stream: true,
+      messages: [{ role: 'user', content: (note ? note + '\n\n' : '') + sys, images: [b64] }] }),
+  })
+  if (!r.ok || !r.body) { res.write(`data: ${JSON.stringify({ error: `Ollama ${r.status}` })}\n\n`); res.end(); return }
+  const reader = r.body.getReader(), dec = new TextDecoder()
+  let buf = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += dec.decode(value, { stream: true })
+    const lines = buf.split('\n'); buf = lines.pop() || ''
+    for (const line of lines) {
+      if (!line.trim()) continue
+      let j; try { j = JSON.parse(line) } catch { continue }
+      const tok = j.message?.content || ''
+      if (tok) res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: tok } }] })}\n\n`)
+      if (j.done) {
+        res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: j.prompt_eval_count || 0, completion_tokens: j.eval_count || 0 } })}\n\n`)
+        res.write('data: [DONE]\n\n')
+      }
+    }
+  }
+  res.end()
+}
+
 // Streaming analysis. Proxies the Cerebras SSE stream straight through so the
 // client measures REAL time-to-first-token and tokens/sec.
 app.post('/api/analyze', async (req, res) => {
@@ -100,14 +133,17 @@ app.post('/api/analyze', async (req, res) => {
       body: JSON.stringify(buildPayload(image, note, true)),
     })
   } catch (err) {
-    return res.status(502).json({ error: `Could not reach Cerebras: ${err.message}` })
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.flushHeaders?.()
+    return streamOllama(image, note, res)
   }
 
   if (!upstream.ok || !upstream.body) {
-    const detail = await upstream.text().catch(() => '')
-    return res
-      .status(upstream.status || 502)
-      .json({ error: `Cerebras returned ${upstream.status}.`, detail: detail.slice(0, 600) })
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.flushHeaders?.()
+    return streamOllama(image, note, res)
   }
 
   // Pass the SSE stream through verbatim.
