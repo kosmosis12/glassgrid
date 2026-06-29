@@ -61,4 +61,46 @@ npm run dev            # → http://localhost:5173
 
 ## Changelog (per commit)
 
-_(appended as each commit lands, below)_
+1. **`7cf4c87` Schematic UI foundation** — `src/styles/tokens.css` (palette, fonts,
+   offset shadows); Google Fonts in `index.html`; `src/index.css` fully replaced:
+   warm-paper canvas + 8px/64px engineering grid + fractal paper-grain + all region
+   styling (sheet frame, masthead, 3-col body, center, readout, footer, responsive).
+   Old dark theme retired. Build ✓.
+2. **`25afefa` SheetFrame + Masthead** — `SheetFrame.tsx` (bracket corners, A1 marker,
+   sheet id, `TitleBlock`); `Masthead.tsx` (✦ wordmark engine card, cognition flow,
+   THROUGHPUT TELEMETRY); `lib/format.ts` shared helpers. Build ✓.
+3. **`7289466` Left rail** — `Rail.tsx`: INPUT (drag/drop/clipboard ingest + samples),
+   MODE (single / speed-reveal segmented), PROVIDER (rows + note + RUN ANALYSIS).
+   Build ✓.
+4. **`fed5faa` Integrate 3-column layout** — `SpeedReveal.tsx` rewritten (dual dashboards,
+   real dual elapsed clocks, A/B race, computed Nx verdict, auto-run in reveal mode);
+   `Readout.tsx` (DSRA from real card); `Footer.tsx` (arch strip + real telemetry chart);
+   new `App.tsx` wiring all regions + run/telemetry/ticks/mode state. Removed old
+   Dropzone/Card/Telemetry. Fixed wordmark spacing, slow-dash header, readout header.
+   Build ✓.
+5. _(this commit)_ **Docs** — README "Design" section for the schematic aesthetic;
+   this changelog; verification notes below.
+
+## Verification
+
+- `npm run build` (tsc + vite) passes at every commit.
+- Dev server boots clean (`npm run dev` → client 200, proxy up, `/api/config` OK).
+- Rendered the empty, populated (seeded demo card + telemetry, then reverted), and
+  narrow (<1100px single-column) states via headless Chromium and confirmed the layout
+  matches the spec: bracket corners, A1 marker, ✦ wordmark, masthead flow, 3-column
+  body, severity-colored readout (CRITICAL → red), footer flow + chart.
+
+## TODO(review) / notes
+
+- **No `CEREBRAS_API_KEY` in this environment** — could not screenshot a *live* run
+  (placeholder key 401s upstream). The data layer (`server/index.js`, `lib/api.ts`,
+  the DSRA prompt) is unchanged and was verified end-to-end in the prior build; the
+  populated-state render was confirmed with a temporary seeded card (reverted). Run
+  with a real key to see live streaming + the A/B race animate.
+- **Missing `design-spec/` (see blocker above)** — exact pixel offsets / ornament
+  micro-placement are my faithful best-interpretation of the textual spec. Drop the
+  real schematic file in to pixel-diff.
+- MODE = SPEED REVEAL auto-runs the A/B race after the live run completes; MODE =
+  SINGLE streams once and leaves the throttled side idle (run A/B manually via the
+  header button). This was the most faithful reading of "dual elapsed clocks show
+  REAL timing (Cerebras stream vs throttled baseline)".

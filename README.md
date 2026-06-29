@@ -30,12 +30,22 @@ agentic workflows. ([Cerebras' announcement of Gemma 4 multimodal at 1,500 tok/s
 1. **Drop / paste an image** — drag-drop, file picker, or paste from clipboard (`⌘V` / `Ctrl+V`).
 2. **Stream to Gemma 4** — the image is base64-encoded and sent to Cerebras'
    OpenAI-compatible multimodal endpoint via a tiny server-side proxy.
-3. **Get a cockpit card** — the single most operationally significant signal,
+3. **Get a readout card** — the single most operationally significant signal,
    scored for severity + confidence, with a concrete next action. Severity drives
-   the color (gold → amber → red).
+   the color (teal → amber → red).
 4. **Watch real telemetry** — tok/s, TTFT, and total latency, measured live from
    the SSE stream. Nothing is faked.
 5. **Hit Speed Reveal** — the dramatic A/B that proves the point.
+
+## Design
+
+The interface is an **engineering schematic**: a warm-paper drafting sheet on an
+8px/64px grid, navy ink, and a burnt-amber accent, with Space Grotesk for display
+and JetBrains Mono for data. A blueprint title-block frame (A1 sheet marker, bracket
+corners) wraps a masthead (engine card · PERCEIVE→REASON→PRESCRIBE→ACT flow ·
+THROUGHPUT TELEMETRY), a three-column body (INPUT/MODE/PROVIDER rail · dual-dashboard
+SPEED REVEAL · DETECT→SCORE→RECOMMEND→ACT readout), and a footer (architecture flow
+strip · live telemetry chart). It collapses to a single column under 1100px.
 
 ## Why Gemma 4, prompted carefully
 
