@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{background:#0f1012;color:#ededf0;width:1000px;height:640px;padding:22px}
+  h1{font-size:17px;font-weight:600}.sub{font-size:12px;color:#8a8a92;margin:2px 0 16px}
+  .row{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+  .card{background:#17181c;border:1px solid #26272d;border-radius:10px;padding:16px}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .kpi .lbl{font-size:11px;color:#8a8a92;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .v{font-size:27px;font-weight:700;margin-top:5px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:12px;margin-top:3px}.ok{color:#5bd17a}.bad{color:#f0645a}
+  .ct{font-size:12px;color:#8a8a92;margin-bottom:10px}
+  .bars{display:flex;align-items:flex-end;gap:14px;height:200px;padding-top:10px}
+  .bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .bcol .bar{width:100%;border-radius:5px 5px 0 0;background:#3a3d8a}
+  .bcol.drop .bar{background:#f0645a}
+  .bcol .lab{font-size:10px;color:#8a8a92}
+  .funnel div{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px solid #26272d}
+  .funnel div:last-child{border:none}
+  .funnel .n{font-variant-numeric:tabular-nums;color:#bcbcc4}
+  .funnel .drop .n{color:#f0645a;font-weight:700}
+</style></head><body>
+  <h1>Growth · Revenue &amp; Conversion</h1>
+  <div class="sub">workspace: Acme SaaS · MTD · vs prior month</div>
+  <div class="row">
+    <div class="card">
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">MRR</div><div class="v">$248.1k</div><div class="d ok">▲ 4.2%</div></div>
+        <div class="kpi"><div class="lbl">New Signups</div><div class="v">1,940</div><div class="d ok">▲ 11%</div></div>
+        <div class="kpi"><div class="lbl">Trial→Paid</div><div class="v bad">6.1%</div><div class="d bad">▼ from 14.8%</div></div>
+        <div class="kpi"><div class="lbl">Churn</div><div class="v bad">5.9%</div><div class="d bad">▲ from 2.1%</div></div>
+      </div>
+      <div class="ct">Trial→paid conversion by week (%)</div>
+      <div class="bars">
+        <div class="bcol"><div class="bar" style="height:140px"></div><div class="lab">W1 · 14.2</div></div>
+        <div class="bcol"><div class="bar" style="height:148px"></div><div class="lab">W2 · 15.0</div></div>
+        <div class="bcol"><div class="bar" style="height:132px"></div><div class="lab">W3 · 13.4</div></div>
+        <div class="bcol drop"><div class="bar" style="height:60px"></div><div class="lab">W4 · 6.1</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Activation funnel · this week</div>
+      <div class="funnel">
+        <div><span>Signed up</span><span class="n">1,940</span></div>
+        <div><span>Verified email</span><span class="n">1,712</span></div>
+        <div><span>Created project</span><span class="n">1,103</span></div>
+        <div class="drop"><span>Completed onboarding</span><span class="n">214 ↓81%</span></div>
+        <div><span>Converted to paid</span><span class="n">118</span></div>
+      </div>
+    </div>
+  </div>
+</body></html>

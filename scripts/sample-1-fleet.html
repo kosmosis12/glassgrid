@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{background:#0d1117;color:#e6edf3;width:1000px;height:640px;padding:22px}
+  h1{font-size:17px;font-weight:600;margin-bottom:2px}
+  .sub{font-size:12px;color:#7d8590;margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .kpi{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px}
+  .kpi .lbl{font-size:11px;color:#7d8590;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .v{font-size:30px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:12px;margin-top:4px}
+  .ok{color:#3fb950}.bad{color:#f85149}.warn{color:#d29922}
+  table{width:100%;border-collapse:collapse;background:#161b22;border:1px solid #21262d;border-radius:10px;overflow:hidden}
+  th{font-size:11px;color:#7d8590;text-align:left;padding:10px 14px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #21262d}
+  td{font-size:13px;padding:11px 14px;border-bottom:1px solid #21262d;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  .pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+  .p-move{background:#1f6feb33;color:#58a6ff}.p-idle{background:#3d444d33;color:#7d8590}
+  .bar{height:7px;border-radius:4px;background:#21262d;overflow:hidden;width:120px;display:inline-block;vertical-align:middle}
+  .bar i{display:block;height:100%}
+</style></head><body>
+  <h1>FleetOps · Live Vehicle Telemetry</h1>
+  <div class="sub">Region EU-West · 28 active units · refreshed 4s ago</div>
+  <div class="grid">
+    <div class="kpi"><div class="lbl">Active Units</div><div class="v">28</div><div class="d ok">▲ all reporting</div></div>
+    <div class="kpi"><div class="lbl">Avg Speed</div><div class="v">61<span style="font-size:14px"> km/h</span></div><div class="d ok">▲ 3% vs 1h</div></div>
+    <div class="kpi"><div class="lbl">Low-Fuel Alerts</div><div class="v bad">1</div><div class="d bad">▲ critical</div></div>
+    <div class="kpi"><div class="lbl">On-Time %</div><div class="v">94<span style="font-size:14px">%</span></div><div class="d warn">▼ 2%</div></div>
+  </div>
+  <table>
+    <tr><th>Unit</th><th>Status</th><th>Speed</th><th>Fuel</th><th>Driver</th></tr>
+    <tr><td>TRK-118</td><td><span class="pill p-move">MOVING</span></td><td>72 km/h</td><td><span class="bar"><i style="width:64%;background:#3fb950"></i></span> 64%</td><td>M. Ortiz</td></tr>
+    <tr><td>TRK-204</td><td><span class="pill p-move">MOVING</span></td><td>58 km/h</td><td><span class="bar"><i style="width:0%;background:#f85149"></i></span> <b style="color:#f85149">0%</b></td><td>K. Singh</td></tr>
+    <tr><td>TRK-091</td><td><span class="pill p-idle">IDLE</span></td><td>0 km/h</td><td><span class="bar"><i style="width:81%;background:#3fb950"></i></span> 81%</td><td>D. Walsh</td></tr>
+    <tr><td>TRK-330</td><td><span class="pill p-move">MOVING</span></td><td>66 km/h</td><td><span class="bar"><i style="width:42%;background:#d29922"></i></span> 42%</td><td>L. Chen</td></tr>
+    <tr><td>TRK-017</td><td><span class="pill p-move">MOVING</span></td><td>54 km/h</td><td><span class="bar"><i style="width:77%;background:#3fb950"></i></span> 77%</td><td>A. Novak</td></tr>
+  </table>
+</body></html>

@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{background:#11131a;color:#e6e9ef;width:1000px;height:640px;padding:22px}
+  h1{font-size:17px;font-weight:600}.sub{font-size:12px;color:#8b90a0;margin:2px 0 16px}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+  .kpi{background:#191c26;border:1px solid #262a37;border-radius:10px;padding:15px}
+  .kpi .lbl{font-size:11px;color:#8b90a0;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .v{font-size:32px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:12px;margin-top:5px}.ok{color:#4ade80}.bad{color:#fb6a6a}.warn{color:#fbbf4a}
+  .chart{background:#191c26;border:1px solid #262a37;border-radius:10px;padding:16px;height:300px;position:relative}
+  .chart .ct{font-size:12px;color:#8b90a0;margin-bottom:6px}
+  svg{width:100%;height:240px}
+  .thr{stroke:#fb6a6a;stroke-width:1.5;stroke-dasharray:5 4}
+  .axis{fill:#6b7080;font-size:10px;font-family:monospace}
+  .badge{position:absolute;top:14px;right:16px;background:#fb6a6a22;color:#fb6a6a;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid #fb6a6a55}
+</style></head><body>
+  <h1>API Gateway · Latency &amp; Error Monitor</h1>
+  <div class="sub">service: checkout-api · window: last 30 min · p99 SLO 1500ms</div>
+  <div class="row">
+    <div class="kpi"><div class="lbl">p50 Latency</div><div class="v">182<span style="font-size:14px">ms</span></div><div class="d ok">▼ nominal</div></div>
+    <div class="kpi"><div class="lbl">p99 Latency</div><div class="v bad">4210<span style="font-size:14px">ms</span></div><div class="d bad">▲ 181% over SLO</div></div>
+    <div class="kpi"><div class="lbl">Error Rate (5xx)</div><div class="v warn">3.8<span style="font-size:14px">%</span></div><div class="d warn">▲ from 0.2%</div></div>
+  </div>
+  <div class="chart">
+    <div class="ct">p99 response time (ms)</div>
+    <div class="badge">SLO BREACH · 14:32</div>
+    <svg viewBox="0 0 920 240" preserveAspectRatio="none">
+      <line class="thr" x1="0" y1="86" x2="920" y2="86"/>
+      <text class="axis" x="6" y="80">SLO 1500ms</text>
+      <polyline fill="none" stroke="#4ade80" stroke-width="2.5"
+        points="0,210 90,205 180,208 270,200 360,198 450,202 520,190 560,150 600,96 650,60 720,40 800,34 920,30"/>
+      <polygon fill="#fb6a6a14" points="560,240 560,150 600,96 650,60 720,40 800,34 920,30 920,240"/>
+      <text class="axis" x="0" y="235">14:02</text>
+      <text class="axis" x="430" y="235">14:17</text>
+      <text class="axis" x="860" y="235">14:32</text>
+    </svg>
+  </div>
+</body></html>
