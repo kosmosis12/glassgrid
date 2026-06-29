@@ -1,0 +1,51 @@
+/* ============================================================================
+   GlassGrid · design tokens — "engineering schematic" aesthetic
+   Source of truth: design-spec/glassgrid-schematic.html (see BUILD-LOG.md —
+   that file was missing from the repo; tokens below are taken verbatim from the
+   task spec: navy ink / burnt-amber / teal / drafting-blue / violet / warm paper).
+   ============================================================================ */
+:root {
+  /* --- core palette --- */
+  --ink: #15202b; /* navy ink — primary text + lines */
+  --ink-2: #2a3744; /* softer ink for secondary text */
+  --ink-3: #5c6b78; /* muted / captions */
+  --paper: #efebe0; /* warm drafting paper — page background */
+  --paper-2: #f5f2ea; /* raised panel paper */
+  --paper-3: #e6e1d3; /* sunken / inset paper */
+
+  --amber: #d5762a; /* burnt-amber — primary accent */
+  --amber-deep: #b25f1e;
+  --teal: #157a6e; /* teal — secondary / "fast" / ok */
+  --blue: #2b5c8a; /* drafting-blue — info / structure */
+  --violet: #5b4b8a; /* violet — tertiary highlight */
+
+  /* --- severity ramp (gold→amber→red as severity climbs) --- */
+  --sev-low: #157a6e;
+  --sev-medium: #d5762a;
+  --sev-high: #c0521c;
+  --sev-critical: #a3231a;
+
+  /* --- line weights --- */
+  --hair: 1px;
+  --rule: 1.5px;
+  --heavy: 2px;
+  --line: var(--ink);
+  --line-soft: rgba(21, 32, 43, 0.22);
+  --line-faint: rgba(21, 32, 43, 0.1);
+
+  /* --- type --- */
+  --display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* --- offset (drafting) shadows — hard, no blur --- */
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow-md: 5px 5px 0 var(--ink);
+  --shadow-amber: 4px 4px 0 var(--amber);
+  --shadow-soft: 3px 3px 0 rgba(21, 32, 43, 0.18);
+
+  /* --- engineering grid --- */
+  --grid-min: rgba(21, 32, 43, 0.06); /* 8px minor lines */
+  --grid-maj: rgba(21, 32, 43, 0.11); /* 64px major lines */
+
+  --radius: 2px; /* drafting = nearly square corners */
+}
