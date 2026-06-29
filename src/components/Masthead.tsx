@@ -28,7 +28,7 @@ export default function Masthead({ model, hasKey, telemetry, busy }: Props) {
         </div>
         <div className="wordmark">
           <span className="sat">✦</span>
-          Glass<em>Grid</em>
+          <span>Glass<em>Grid</em></span>
         </div>
         <div className="subtitle">visual operations agent · sees a dashboard, prescribes the fix</div>
         <div className="chips">

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import Dropzone from './components/Dropzone'
-import TelemetryStrip from './components/Telemetry'
-import Card from './components/Card'
+import SheetFrame, { TitleBlock } from './components/SheetFrame'
+import Masthead from './components/Masthead'
+import Rail, { type Mode } from './components/Rail'
 import SpeedReveal from './components/SpeedReveal'
+import Readout from './components/Readout'
+import Footer from './components/Footer'
 import { analyzeImage, getConfig } from './lib/api'
 import type { ActionCard, Telemetry, TokenTick } from './lib/types'
 
@@ -36,6 +38,7 @@ async function toDataUrl(pathOrData: string): Promise<string> {
 export default function App() {
   const [image, setImage] = useState<string | null>(null)
   const [note, setNote] = useState('')
+  const [mode, setMode] = useState<Mode>('reveal')
   const [busy, setBusy] = useState(false)
   const [hasRun, setHasRun] = useState(false)
   const [raw, setRaw] = useState('')
@@ -43,22 +46,27 @@ export default function App() {
   const [telemetry, setTelemetry] = useState<Telemetry>(EMPTY_TELEMETRY)
   const [ticks, setTicks] = useState<TokenTick[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null)
   const [cfg, setCfg] = useState<{ model: string; hasKey: boolean }>({ model: 'gemma-4-31b', hasKey: true })
 
   useEffect(() => {
     getConfig().then((c) => setCfg({ model: c.model, hasKey: c.hasKey }))
   }, [])
 
+  const reset = () => {
+    setCard(null)
+    setRaw('')
+    setTicks([])
+    setTelemetry(EMPTY_TELEMETRY)
+    setError(null)
+  }
+
   const handleImage = async (value: string) => {
     setError(null)
     try {
       const dataUrl = await toDataUrl(value)
       setImage(dataUrl)
-      // Reset previous analysis when a new image lands.
-      setCard(null)
-      setRaw('')
-      setTicks([])
-      setTelemetry(EMPTY_TELEMETRY)
+      reset()
       setHasRun(false)
     } catch {
       setError('Could not load that image.')
@@ -69,11 +77,8 @@ export default function App() {
     if (!image || busy) return
     setBusy(true)
     setHasRun(true)
-    setError(null)
-    setCard(null)
-    setRaw('')
-    setTicks([])
-    setTelemetry(EMPTY_TELEMETRY)
+    reset()
+    setRunStartedAt(performance.now())
     try {
       const result = await analyzeImage(image, note, {
         onToken: (full) => setRaw(full),
@@ -84,46 +89,29 @@ export default function App() {
       setTicks(result.ticks)
       setTelemetry(result.telemetry)
       if (!result.card) {
-        setError('Model responded but the card JSON could not be parsed. Raw output is shown above.')
+        setError('Model responded but the card JSON could not be parsed. Raw output is shown.')
       }
-    } catch (e: any) {
-      setError(e?.message || 'Analysis failed.')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Analysis failed.')
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="app">
-      <div className="topbar">
-        <div className="brand">
-          <svg className="brand-mark" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round">
-            <path d="M50 14 L86 35 L86 65 L50 86 L14 65 L14 35 Z" />
-            <path d="M50 14 L50 50 L86 35 M50 50 L14 35 M50 50 L50 86" strokeWidth="3" opacity="0.55" />
-          </svg>
-          <div>
-            <div className="brand-title">Glass<span>Grid</span></div>
-            <div className="brand-sub">visual ops agent · cerebras gemma 4</div>
-          </div>
-        </div>
-        <div className={`status-chip${cfg.hasKey ? '' : ' warn'}`}>
-          {cfg.hasKey ? (
-            <>model <b>{cfg.model}</b> · key loaded ✓</>
-          ) : (
-            <>⚠ no CEREBRAS_API_KEY — add it to .env</>
-          )}
-        </div>
-      </div>
+    <SheetFrame>
+      <Masthead model={cfg.model} hasKey={cfg.hasKey} telemetry={telemetry} busy={busy} />
 
-      <div className="tagline">
-        See a dashboard → <b>detect · score · recommend · act</b> → at ~1500 tok/s. The speed is the product.
-      </div>
+      <div className="section-rule">OPERATIONS · drop a screen → prescribe the fix</div>
 
-      <div className="grid">
-        <Dropzone
+      <div className="body-grid">
+        <Rail
           image={image}
           busy={busy}
           note={note}
+          mode={mode}
+          model={cfg.model}
+          hasKey={cfg.hasKey}
           samples={SAMPLES}
           onImage={handleImage}
           onNote={setNote}
@@ -131,31 +119,44 @@ export default function App() {
           onClear={() => {
             setImage(null)
             setHasRun(false)
-            setCard(null)
-            setRaw('')
-            setTicks([])
-            setTelemetry(EMPTY_TELEMETRY)
-            setError(null)
+            reset()
           }}
+          onMode={setMode}
         />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <TelemetryStrip telemetry={telemetry} live={busy} />
-          <Card card={card} raw={raw} streaming={busy} hasRun={hasRun} />
+        <div className="center">
+          <SpeedReveal
+            ticks={ticks}
+            telemetry={telemetry}
+            busy={busy}
+            liveText={raw}
+            hasRun={hasRun}
+            mode={mode}
+            runStartedAt={runStartedAt}
+          />
+        </div>
+
+        <div className="readout">
+          <Readout card={card} raw={raw} busy={busy} hasRun={hasRun} />
+          {error && <div className="err">⚠ {error}</div>}
         </div>
       </div>
 
-      {error && <div className="err">⚠ {error}</div>}
+      <div className="section-rule">SYSTEM</div>
+      <Footer ticks={ticks} telemetry={telemetry} />
 
-      <SpeedReveal ticks={ticks} telemetry={telemetry} />
+      <TitleBlock model={cfg.model} hasKey={cfg.hasKey} />
 
-      <div className="footer">
-        GlassGrid · built for the Cerebras × Google DeepMind Gemma 4 hackathon ·{' '}
-        real telemetry, measured from the live SSE stream ·{' '}
-        <a href="https://www.cerebras.ai/blog/gemma-4-on-cerebras-the-fastest-inference-is-now-multimodal" target="_blank" rel="noreferrer">
+      <div className="colophon">
+        GlassGrid · Cerebras × Gemma 4 · real telemetry measured from the live SSE stream ·{' '}
+        <a
+          href="https://www.cerebras.ai/blog/gemma-4-on-cerebras-the-fastest-inference-is-now-multimodal"
+          target="_blank"
+          rel="noreferrer"
+        >
           the speed thesis
         </a>
       </div>
-    </div>
+    </SheetFrame>
   )
 }

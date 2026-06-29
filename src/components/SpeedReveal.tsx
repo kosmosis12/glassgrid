@@ -1,157 +1,189 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TokenTick, Telemetry } from '../lib/types'
+import type { Mode } from './Rail'
+import { fmt, secs } from '../lib/format'
 
 interface Props {
   ticks: TokenTick[]
   telemetry: Telemetry
+  busy: boolean
+  liveText: string
+  hasRun: boolean
+  mode: Mode
+  runStartedAt: number | null
 }
 
-// The Haiku-equivalent baseline we throttle the B-side to. Cerebras publishes
-// Gemma 4 at ~1500 tok/s vs ~100 tok/s for Haiku-class inference.
+// Haiku-equivalent baseline we throttle the B-side to (~100 tok/s vs Cerebras ~1500).
 const SLOW_TPS = 100
 
 interface Side {
   text: string
-  revealed: number
+  clockMs: number
   rate: number
   done: boolean
 }
+const EMPTY: Side = { text: '', clockMs: 0, rate: 0, done: false }
 
-const EMPTY: Side = { text: '', revealed: 0, rate: 0, done: false }
-
-export default function SpeedReveal({ ticks, telemetry }: Props) {
-  const [open, setOpen] = useState(false)
+export default function SpeedReveal({ ticks, telemetry, busy, liveText, hasRun, mode, runStartedAt }: Props) {
+  const [liveClock, setLiveClock] = useState(0)
+  const [replaying, setReplaying] = useState(false)
   const [fast, setFast] = useState<Side>(EMPTY)
   const [slow, setSlow] = useState<Side>(EMPTY)
-  const [playing, setPlaying] = useState(false)
   const rafRef = useRef<number | null>(null)
+  const lastTicksRef = useRef<TokenTick[] | null>(null)
 
   const fullText = ticks.map((t) => t.text).join('')
-  const tokenCount = telemetry.completionTokens ?? ticks.length
   const realTps = telemetry.tokensPerSec ?? 0
+  const speedup = realTps > 0 ? realTps / SLOW_TPS : 0
 
   const stop = useCallback(() => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
     rafRef.current = null
   }, [])
 
-  const run = useCallback(() => {
+  // Live elapsed clock for the FAST side during the real Cerebras stream.
+  useEffect(() => {
+    if (!busy || runStartedAt == null) return
+    let raf = 0
+    const tick = () => {
+      setLiveClock(performance.now() - runStartedAt)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [busy, runStartedAt])
+
+  // The A/B race: replay the captured stream — fast at its REAL recorded cadence,
+  // slow stretched to the throttled 100 tok/s baseline. Both clocks count real time.
+  const runReplay = useCallback(() => {
     if (!ticks.length) return
     stop()
+    setReplaying(true)
     setFast(EMPTY)
     setSlow(EMPTY)
-    setPlaying(true)
 
     const first = ticks[0].t
     const last = ticks[ticks.length - 1].t
-    const fastWindow = Math.max(last - first, 1) // real generation window (ms)
-    const slowWindow = (tokenCount / SLOW_TPS) * 1000 // throttled to 100 tok/s
+    const fastWindow = Math.max(last - first, 1)
+    const tokenCount = telemetry.completionTokens ?? ticks.length
+    const slowWindow = (tokenCount / SLOW_TPS) * 1000
     const scale = slowWindow / fastWindow
-
-    // Schedule each chunk: fast at its real offset, slow stretched to 100 tok/s.
     const fastSched = ticks.map((t) => t.t - first)
     const slowSched = ticks.map((t) => (t.t - first) * scale)
+    const join = (n: number) => ticks.slice(0, n).map((t) => t.text).join('')
 
     const start = performance.now()
-    const tick = () => {
-      const elapsed = performance.now() - start
-
+    const step = () => {
+      const el = performance.now() - start
       let fi = 0
-      while (fi < fastSched.length && fastSched[fi] <= elapsed) fi++
+      while (fi < fastSched.length && fastSched[fi] <= el) fi++
       let si = 0
-      while (si < slowSched.length && slowSched[si] <= elapsed) si++
+      while (si < slowSched.length && slowSched[si] <= el) si++
+      const fDone = fi >= ticks.length
+      const sDone = si >= ticks.length
+      const elSec = Math.max(el, 1) / 1000
 
-      const fSecs = Math.max(elapsed, 1) / 1000
-      const sSecs = fSecs
-      const fastDone = fi >= ticks.length
-      const slowDone = si >= ticks.length
+      setFast({ text: join(fi), clockMs: fDone ? fastWindow : el, rate: fDone ? realTps : fi / elSec, done: fDone })
+      setSlow({ text: join(si), clockMs: sDone ? slowWindow : el, rate: sDone ? SLOW_TPS : si / elSec, done: sDone })
 
-      setFast({
-        text: ticks.slice(0, fi).map((t) => t.text).join(''),
-        revealed: fi,
-        rate: fastDone ? realTps : fi / fSecs,
-        done: fastDone,
-      })
-      setSlow({
-        text: ticks.slice(0, si).map((t) => t.text).join(''),
-        revealed: si,
-        rate: slowDone ? SLOW_TPS : si / sSecs,
-        done: slowDone,
-      })
-
-      if (!slowDone) {
-        rafRef.current = requestAnimationFrame(tick)
+      if (!sDone) {
+        rafRef.current = requestAnimationFrame(step)
       } else {
-        // Lock in the headline numbers at the end.
-        setFast((s) => ({ ...s, text: fullText, revealed: ticks.length, rate: realTps, done: true }))
-        setSlow((s) => ({ ...s, text: fullText, revealed: ticks.length, rate: SLOW_TPS, done: true }))
-        setPlaying(false)
+        setFast({ text: fullText, clockMs: fastWindow, rate: realTps, done: true })
+        setSlow({ text: fullText, clockMs: slowWindow, rate: SLOW_TPS, done: true })
+        setReplaying(false)
         rafRef.current = null
       }
     }
-    rafRef.current = requestAnimationFrame(tick)
-  }, [ticks, tokenCount, realTps, fullText, stop])
+    rafRef.current = requestAnimationFrame(step)
+  }, [ticks, telemetry, fullText, stop, realTps])
+
+  // Auto-run the A/B once per fresh result when MODE = speed-reveal.
+  useEffect(() => {
+    if (busy || !hasRun || !ticks.length) return
+    if (lastTicksRef.current === ticks) return
+    lastTicksRef.current = ticks
+    if (mode === 'reveal') runReplay()
+  }, [busy, hasRun, ticks, mode, runReplay])
 
   useEffect(() => stop, [stop])
 
-  const speedup = realTps > 0 ? realTps / SLOW_TPS : 0
+  // Resolve what each column shows given the current phase.
+  const fastView: Side = replaying
+    ? fast
+    : busy
+      ? { text: liveText, clockMs: liveClock, rate: realTps, done: false }
+      : hasRun
+        ? { text: fullText, clockMs: telemetry.totalMs ?? 0, rate: realTps, done: true }
+        : EMPTY
+
+  const slowIdle = !replaying && !slow.done
+  const verdictReady = slow.done && !replaying
 
   return (
-    <>
-      <div className="reveal-bar">
-        <div className="reveal-copy">
-          <h4>Speed Reveal · why wafer-scale changes what's buildable</h4>
-          <p>
-            Replay the exact same response at <b>Cerebras Gemma 4 speed</b> vs a throttled{' '}
-            <b>~100 tok/s Haiku-equivalent</b>. The agentic loop only feels real on the left.
-          </p>
-        </div>
-        <button
-          className="reveal-btn"
-          disabled={!ticks.length}
-          onClick={() => {
-            const next = !open
-            setOpen(next)
-            if (next) setTimeout(run, 50)
-            else {
-              stop()
-              setPlaying(false)
-            }
-          }}
-        >
-          {open ? (playing ? 'REPLAYING…' : 'RERUN A/B ↻') : 'RUN SPEED REVEAL ▸'}
+    <div className="reveal">
+      <div className="reveal-h">
+        <span className="title"><span className="idx">D</span> · SPEED REVEAL — DUAL DASHBOARD</span>
+        <button className="btn-reveal" disabled={!ticks.length || busy} onClick={runReplay}>
+          {replaying ? 'REPLAYING…' : ticks.length ? 'RUN A/B ↻' : 'RUN A/B'}
         </button>
       </div>
 
-      {open && (
-        <div className="ab-grid">
-          <div className="ab-col fast">
-            <div className="ab-head">
-              <span className="name">
-                Cerebras Gemma 4 {fast.done && <span className="badge-win">{speedup ? `${speedup.toFixed(0)}× faster` : 'WAFER-SCALE'}</span>}
-              </span>
-              <span className="rate"><b>{Math.round(fast.rate)}</b> tok/s</span>
-            </div>
-            <div className="ab-stream">{fast.text}{!fast.done && <span className="cursor" />}</div>
-            <div className="ab-foot">
-              <span>{fast.revealed}/{ticks.length} chunks</span>
-              <span className={fast.done ? 'done' : ''}>{fast.done ? '✓ complete' : 'streaming…'}</span>
-            </div>
+      <div className="dash-grid">
+        {/* FAST — Cerebras */}
+        <div className="dash fast">
+          <div className="dash-h">
+            <span className="name">Cerebras · {/* model shown in masthead */}Gemma 4</span>
+            <span className="rate"><b>{fmt(fastView.rate)}</b> tok/s</span>
           </div>
-
-          <div className="ab-col slow">
-            <div className="ab-head">
-              <span className="name">Haiku-equivalent · throttled</span>
-              <span className="rate"><b>{Math.round(slow.rate)}</b> tok/s</span>
-            </div>
-            <div className="ab-stream">{slow.text}{!slow.done && <span className="cursor" />}</div>
-            <div className="ab-foot">
-              <span>{slow.revealed}/{ticks.length} chunks</span>
-              <span className={slow.done ? 'done' : ''}>{slow.done ? '✓ complete' : 'still going…'}</span>
-            </div>
+          <div className="dash-clock">
+            {secs(fastView.clockMs)}<small>s</small>
+          </div>
+          <div className="dash-stream">
+            {fastView.text}
+            {(busy || replaying) && !fastView.done && <span className="cursor" />}
+          </div>
+          <div className="dash-foot">
+            <span>elapsed · real stream</span>
+            <span className={fastView.done ? 'done' : ''}>{fastView.done ? '✓ complete' : busy || replaying ? 'streaming…' : 'idle'}</span>
           </div>
         </div>
+
+        {/* SLOW — throttled baseline */}
+        <div className="dash slow">
+          <div className="dash-h">
+            <span className="name">Haiku-equiv · throttled</span>
+            <span className="rate"><b>{fmt(slow.rate)}</b> tok/s</span>
+          </div>
+          <div className="dash-clock">
+            {secs(slow.clockMs)}<small>s</small>
+          </div>
+          <div className="dash-stream">
+            {slowIdle ? (
+              <span style={{ color: 'var(--ink-3)' }}>
+                {ticks.length ? 'press RUN A/B to race the throttled baseline.' : 'run an analysis, then race the throttled baseline here.'}
+              </span>
+            ) : (
+              <>
+                {slow.text}
+                {!slow.done && <span className="cursor" />}
+              </>
+            )}
+          </div>
+          <div className="dash-foot">
+            <span>elapsed · throttled</span>
+            <span className={slow.done ? 'done' : ''}>{slow.done ? '✓ complete' : replaying ? 'still going…' : 'idle'}</span>
+          </div>
+        </div>
+      </div>
+
+      {verdictReady && (
+        <div className="verdict">
+          same response, same tokens — Cerebras finished
+          <span className="x">{speedup ? `${speedup.toFixed(0)}×` : '—'}</span>
+          faster. that delta is why visual agentic loops are buildable.
+        </div>
       )}
-    </>
+    </div>
   )
 }
